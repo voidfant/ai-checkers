@@ -1,0 +1,629 @@
+openapi: 3.0.3
+info:
+  title: AI Checkers API
+  version: 1.0.0
+  description: |
+    Planned backend API contract for the AI Checkers Telegram Mini App.
+
+    This specification is used as the target implementation blueprint for the
+    production architecture:
+    - Telegram Mini App `initData` is used for user authentication.
+    - Game rules, move validation, AI turns, and match outcomes are managed by the backend.
+    - Saved games and resumable sessions are synchronized with Telegram Mini App Cloud Storage
+      for the authenticated Telegram user.
+servers:
+  - url: https://{domain}
+    description: Public HTTPS origin for the Telegram Mini App backend
+    variables:
+      domain:
+        default: example.com
+        description: Deployment domain
+tags:
+  - name: System
+  - name: Auth
+  - name: User
+  - name: Games
+  - name: Realtime
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: 1.0.0
+                  timestamp:
+                    type: string
+                    format: date-time
+        '503':
+          description: Service is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/telegram:
+    post:
+      tags: [Auth]
+      summary: Authenticate Telegram Mini App user
+      operationId: authenticateTelegramUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramAuthRequest'
+      responses:
+        '200':
+          description: Authentication succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Telegram auth payload is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /me:
+    get:
+      tags: [User]
+      summary: Get current authenticated user
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Missing or invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /games:
+    get:
+      tags: [Games]
+      summary: List saved games for the authenticated Telegram user
+      operationId: listGames
+      description: |
+        Returns games owned by the authenticated Telegram user. The backend
+        exposes the canonical list while synchronizing game metadata and
+        resumable sessions with Telegram Mini App Cloud Storage.
+      responses:
+        '200':
+          description: Saved games
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GameSummary'
+        '401':
+          description: Missing or invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags: [Games]
+      summary: Create a new game
+      operationId: createGame
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGameRequest'
+      responses:
+        '201':
+          description: Game created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameState'
+        '400':
+          description: Request payload is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /games/{gameId}:
+    get:
+      tags: [Games]
+      summary: Get a game by ID
+      operationId: getGame
+      parameters:
+        - $ref: '#/components/parameters/GameId'
+      responses:
+        '200':
+          description: Full game state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameState'
+        '401':
+          description: Missing or invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Game was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Games]
+      summary: Delete a saved game
+      operationId: deleteGame
+      parameters:
+        - $ref: '#/components/parameters/GameId'
+      responses:
+        '204':
+          description: Game deleted
+        '401':
+          description: Missing or invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Game was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /games/{gameId}/moves:
+    post:
+      tags: [Games]
+      summary: Submit a move
+      operationId: submitMove
+      description: |
+        The backend is the authoritative rules engine. It validates the move,
+        applies captures and promotions, advances the game state, and persists
+        the updated snapshot for the authenticated Telegram user.
+      parameters:
+        - $ref: '#/components/parameters/GameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitMoveRequest'
+      responses:
+        '200':
+          description: Move accepted and game state updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitMoveResponse'
+        '400':
+          description: Move is invalid or out of turn
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Game was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /games/{gameId}/ai-turn:
+    post:
+      tags: [Games]
+      summary: Ask the backend AI to make the next move
+      operationId: triggerAiTurn
+      parameters:
+        - $ref: '#/components/parameters/GameId'
+      responses:
+        '200':
+          description: AI move was applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitMoveResponse'
+        '400':
+          description: AI turn cannot be processed in the current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Game was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /games/{gameId}/save:
+    post:
+      tags: [Games]
+      summary: Persist current game state
+      operationId: saveGame
+      description: |
+        Forces a persistence pass for the current game. The backend stores the
+        canonical state and synchronizes resumable metadata with Telegram Mini
+        App Cloud Storage for the authenticated user.
+      parameters:
+        - $ref: '#/components/parameters/GameId'
+      responses:
+        '200':
+          description: Save completed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [gameId, persisted]
+                properties:
+                  gameId:
+                    type: string
+                    format: uuid
+                  persisted:
+                    type: boolean
+                    example: true
+                  storage:
+                    $ref: '#/components/schemas/CloudStorageSync'
+        '401':
+          description: Missing or invalid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Game was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /ws:
+    get:
+      tags: [Realtime]
+      summary: Realtime WebSocket endpoint
+      operationId: connectRealtimeSocket
+      description: |
+        Upgrades to a WebSocket connection used for realtime game events such as:
+        - authenticated session binding
+        - move confirmations
+        - AI turn progress
+        - game synchronization and resume notifications
+      responses:
+        '101':
+          description: Switching Protocols
+        '400':
+          description: Handshake request was invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Session is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    GameId:
+      name: gameId
+      in: path
+      required: true
+      description: Unique game identifier
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    TelegramAuthRequest:
+      type: object
+      required: [initData]
+      properties:
+        initData:
+          type: string
+          description: Raw Telegram Mini App initData string
+          example: query_id=AAHdF6IQAAAAAN0XohDhrOrc&user=%7B%22id%22%3A123456789%7D&auth_date=1710000000&hash=...
+    AuthResponse:
+      type: object
+      required: [sessionToken, expiresAt, user]
+      properties:
+        sessionToken:
+          type: string
+          description: Bearer token used for subsequent API calls
+          example: eyJhbGciOi...
+        expiresAt:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/UserProfile'
+    UserProfile:
+      type: object
+      required: [telegramUserId, firstName]
+      properties:
+        telegramUserId:
+          type: integer
+          format: int64
+          example: 123456789
+        username:
+          type: string
+          nullable: true
+          example: checkers_player
+        firstName:
+          type: string
+          example: Konstantin
+        lastName:
+          type: string
+          nullable: true
+          example: Ivanov
+        languageCode:
+          type: string
+          nullable: true
+          example: ru
+    CreateGameRequest:
+      type: object
+      required: [humanSide, difficulty]
+      properties:
+        humanSide:
+          type: string
+          enum: [white, black]
+          example: white
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+          example: medium
+        resumeFromLastSaved:
+          type: boolean
+          default: false
+    GameSummary:
+      type: object
+      required: [id, status, difficulty, humanSide, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/GameLifecycleStatus'
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        humanSide:
+          type: string
+          enum: [white, black]
+        result:
+          $ref: '#/components/schemas/GameResult'
+        updatedAt:
+          type: string
+          format: date-time
+        storage:
+          $ref: '#/components/schemas/CloudStorageSync'
+    GameState:
+      type: object
+      required:
+        - id
+        - status
+        - difficulty
+        - humanSide
+        - currentTurn
+        - board
+        - legalMoves
+        - moveHistory
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/GameLifecycleStatus'
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        humanSide:
+          type: string
+          enum: [white, black]
+        currentTurn:
+          type: string
+          enum: [white, black]
+        result:
+          $ref: '#/components/schemas/GameResult'
+        board:
+          type: array
+          minItems: 8
+          maxItems: 8
+          items:
+            type: array
+            minItems: 8
+            maxItems: 8
+            items:
+              $ref: '#/components/schemas/BoardCell'
+        legalMoves:
+          type: array
+          items:
+            $ref: '#/components/schemas/Move'
+        moveHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/MoveRecord'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        storage:
+          $ref: '#/components/schemas/CloudStorageSync'
+    BoardCell:
+      oneOf:
+        - $ref: '#/components/schemas/EmptyCell'
+        - $ref: '#/components/schemas/Piece'
+    EmptyCell:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [empty]
+    Piece:
+      type: object
+      required: [kind, side, pieceType]
+      properties:
+        kind:
+          type: string
+          enum: [piece]
+        side:
+          type: string
+          enum: [white, black]
+        pieceType:
+          type: string
+          enum: [man, king]
+    Position:
+      type: object
+      required: [row, col]
+      properties:
+        row:
+          type: integer
+          minimum: 0
+          maximum: 7
+        col:
+          type: integer
+          minimum: 0
+          maximum: 7
+    Move:
+      type: object
+      required: [from, to, isCapture]
+      properties:
+        from:
+          $ref: '#/components/schemas/Position'
+        to:
+          $ref: '#/components/schemas/Position'
+        isCapture:
+          type: boolean
+        captured:
+          type: array
+          items:
+            $ref: '#/components/schemas/Position'
+        promotesToKing:
+          type: boolean
+          default: false
+        notation:
+          type: string
+          example: c3-d4
+    SubmitMoveRequest:
+      type: object
+      required: [move]
+      properties:
+        move:
+          $ref: '#/components/schemas/Move'
+    SubmitMoveResponse:
+      type: object
+      required: [accepted, game]
+      properties:
+        accepted:
+          type: boolean
+          example: true
+        game:
+          $ref: '#/components/schemas/GameState'
+        serverEvents:
+          type: array
+          items:
+            type: string
+          example: [move.applied, state.persisted]
+    MoveRecord:
+      type: object
+      required: [turn, side, notation, createdAt]
+      properties:
+        turn:
+          type: integer
+          minimum: 1
+          example: 12
+        side:
+          type: string
+          enum: [white, black]
+        notation:
+          type: string
+          example: c3:d4:f6
+        createdAt:
+          type: string
+          format: date-time
+    CloudStorageSync:
+      type: object
+      required: [provider, synced]
+      properties:
+        provider:
+          type: string
+          enum: [telegram-cloud-storage]
+          example: telegram-cloud-storage
+        synced:
+          type: boolean
+          example: true
+        syncedAt:
+          type: string
+          format: date-time
+          nullable: true
+    GameLifecycleStatus:
+      type: string
+      enum: [active, finished, archived]
+      example: active
+    GameResult:
+      type: string
+      nullable: true
+      enum:
+        - user_win
+        - ai_win
+        - draw
+        - null
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: invalid_move
+        message:
+          type: string
+          example: The submitted move is not legal for the current board state.

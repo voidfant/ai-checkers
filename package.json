@@ -7,8 +7,11 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "api:dev": "node server/api.mjs",
+    "docs:swagger:generate": "node scripts/generate-openapi.mjs",
+    "docs:swagger:validate": "node scripts/validate-openapi.mjs docs/openapi.yaml",
     "docs:typedoc": "typedoc --options typedoc.json",
-    "docs:swagger": "node scripts/validate-openapi.mjs docs/openapi.yaml",
+    "docs:swagger": "npm run docs:swagger:validate",
     "docs": "npm run docs:typedoc && npm run docs:swagger"
   },
   "dependencies": {
@@ -24,6 +27,8 @@
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.5.0",
     "dotenv": "^16.5.0",
+    "js-yaml": "^4.1.0",
+    "swagger-jsdoc": "^6.2.8",
     "typescript": "~5.7.2",
     "vite": "^6.2.0",
     "typedoc": "^0.28.14"

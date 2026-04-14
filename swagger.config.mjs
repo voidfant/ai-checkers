@@ -1,0 +1,82 @@
+const swaggerDefinition = {
+  openapi: '3.0.3',
+  info: {
+    title: 'AI Checkers API',
+    version: '1.0.0',
+    description: 'Code-derived OpenAPI document generated from JSDoc annotations.',
+  },
+  servers: [
+    {
+      url: 'https://example.com',
+      description: 'Public API origin',
+    },
+  ],
+  tags: [
+    { name: 'System' },
+    { name: 'Auth' },
+    { name: 'User' },
+    { name: 'Games' },
+    { name: 'Realtime' },
+  ],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+    },
+    schemas: {
+      UserProfile: {
+        type: 'object',
+        required: ['telegramUserId', 'firstName'],
+        properties: {
+          telegramUserId: {
+            type: 'integer',
+            format: 'int64',
+            example: 123456789,
+          },
+          username: {
+            type: 'string',
+            nullable: true,
+            example: 'checkers_player',
+          },
+          firstName: {
+            type: 'string',
+            example: 'Konstantin',
+          },
+          lastName: {
+            type: 'string',
+            nullable: true,
+            example: 'Ivanov',
+          },
+          languageCode: {
+            type: 'string',
+            nullable: true,
+            example: 'ru',
+          },
+        },
+      },
+      Error: {
+        type: 'object',
+        required: ['code', 'message'],
+        properties: {
+          code: {
+            type: 'string',
+            example: 'unauthorized',
+          },
+          message: {
+            type: 'string',
+            example: 'Missing or invalid session.',
+          },
+        },
+      },
+    },
+  },
+  security: [{ bearerAuth: [] }],
+};
+
+export default {
+  definition: swaggerDefinition,
+  apis: ['./server/**/*.mjs'],
+};
