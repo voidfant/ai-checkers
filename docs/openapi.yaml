@@ -1,0 +1,73 @@
+openapi: 3.0.3
+info:
+  title: AI Checkers API
+  description: |
+    HTTP + WebSocket interface used by the AI Checkers app.
+
+    Notes:
+    - `/health` is intended for probes and uptime checks.
+    - `/ws` upgrades to a WebSocket connection for real-time gameplay.
+  version: 1.0.0
+servers:
+  - url: http://localhost:2536
+    description: Local WebSocket/HTTP gateway
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns a lightweight status payload for probes and monitoring.
+      operationId: getHealth
+      tags: [System]
+      responses:
+        '200':
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /ws:
+    get:
+      summary: WebSocket endpoint
+      operationId: connectWebSocket
+      tags: [Realtime]
+      description: |
+        Performs a WebSocket handshake. After upgrade, gameplay messages
+        are exchanged as JSON frames.
+      responses:
+        '101':
+          description: Switching Protocols (WebSocket upgrade)
+        '400':
+          description: Handshake request was invalid.
+components:
+  schemas:
+    ClientMessage:
+      description: Message envelope sent by a game client to the server.
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          description: Message discriminator.
+          example: make_move
+        payload:
+          type: object
+          description: Message-specific JSON payload.
+          additionalProperties: true
+    ServerMessage:
+      description: Message envelope sent by the server back to a game client.
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          description: Message discriminator.
+          example: game_state
+        payload:
+          type: object
+          description: Message-specific JSON payload.
+          additionalProperties: true

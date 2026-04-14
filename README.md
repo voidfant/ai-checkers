@@ -71,6 +71,17 @@ docker-compose -f docker-compose.yml up -d prod websocket
 vercel --prod
 ```
 
+### API & Type Documentation
+
+```bash
+# Generate TypeScript API docs (TypeDoc output to docs/typedoc)
+npm run docs:typedoc
+
+# Validate OpenAPI document and view Swagger UI
+npm run docs:swagger
+# then open docs/swagger.html in a browser
+```
+
 ## 🎯 Game Features
 
 - Standard Checkers rules with mandatory captures
