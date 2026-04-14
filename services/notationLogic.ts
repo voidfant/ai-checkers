@@ -16,8 +16,6 @@ export const positionToNotation = (pos: Position): string => {
  * Determines the game result string (e.g., "1-0", "0-1", "1/2-1/2")
  * from White's perspective.
  * @param status The final game status.
- * @param humanPlayerId The Player ID (Player.USER or Player.AI) that the human was controlling.
- *                      Player.USER pieces are White, Player.AI pieces are Black.
  * @returns The result string.
  */
 export const getGameResultString = (status: GameStatus): string => {

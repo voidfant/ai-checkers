@@ -2,9 +2,19 @@
 import { BOARD_SIZE, MOVES_FOR_KING_DOMINANCE_DRAW, MOVES_FOR_STAGNATION_DRAW, REPETITIONS_FOR_DRAW, MOVES_KING_ENDGAME_2_3_PIECES, MOVES_KING_ENDGAME_4_5_PIECES, MOVES_KING_ENDGAME_6_7_PIECES } from '../constants.ts';
 import { BoardState, Move, PieceType, Player, Position, SquareState, GameStatus, GameHistoryEntry } from '../types.ts';
 
+/**
+ * Creates a populated square state for a specific player and piece type.
+ */
 export const createInitialSquareState = (player: Player, type: PieceType): SquareState => ({ player, type });
+
+/**
+ * Creates an empty square state.
+ */
 export const createEmptySquareState = (): SquareState => ({ player: Player.NONE });
 
+/**
+ * Initializes a standard Russian draughts board.
+ */
 export const initializeBoard = (): BoardState => {
   const board: BoardState = Array(BOARD_SIZE)
     .fill(null)
@@ -24,13 +34,21 @@ export const initializeBoard = (): BoardState => {
   return board;
 };
 
+/**
+ * Checks whether a row/column pair lies within board bounds.
+ */
 const isWithinBoard = (row: number, col: number): boolean => {
   return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
 };
 
-// Helper to get opponent player
+/**
+ * Returns the opposing player.
+ */
 const getOpponent = (player: Player): Player => player === Player.USER ? Player.AI : Player.USER;
 
+/**
+ * Computes legal simple and jump moves for a single piece.
+ */
 const getPieceMoves = (board: BoardState, pos: Position, player: Player, pieceType: PieceType): Move[] => {
   const moves: Move[] = [];
   const { row, col } = pos;
@@ -108,6 +126,9 @@ const getPieceMoves = (board: BoardState, pos: Position, player: Player, pieceTy
 };
 
 
+/**
+ * Computes valid moves for a player, enforcing mandatory capture and multi-jump continuation rules.
+ */
 export const getValidMoves = (board: BoardState, player: Player, specificPiecePos?: Position, midJumpPiecePos?: Position): Move[] => {
   // 1. Handle mid-jump continuation: If a piece just jumped and can jump again, it MUST.
   if (midJumpPiecePos) {
@@ -159,6 +180,9 @@ export const getValidMoves = (board: BoardState, player: Player, specificPiecePo
 };
 
 
+/**
+ * Applies a move to a copied board and returns the resulting board with movement metadata.
+ */
 export const applyMove = (board: BoardState, move: Move): { newBoard: BoardState; pieceJustMoved: Position; pieceTypeAtOrigin: PieceType; pieceTypeAtLanding: PieceType } => {
   const newBoard = board.map(row => row.map(square => ({ ...square })));
   const pieceBeingMoved = { ...newBoard[move.from.row][move.from.col] }; // Copy of piece before moving
@@ -184,7 +208,9 @@ export const applyMove = (board: BoardState, move: Move): { newBoard: BoardState
   return { newBoard, pieceJustMoved: move.to, pieceTypeAtOrigin, pieceTypeAtLanding: finalPieceType };
 };
 
-// Helper to generate a simple hash for board state for repetition checks
+/**
+ * Produces a compact board hash used for repetition-draw checks.
+ */
 export const hashBoard = (board: BoardState): string => {
   return board.map(row => 
     row.map(sq => `${sq.player === Player.NONE ? 'N' : sq.player === Player.USER ? 'U' : 'A'}${sq.type === PieceType.KING ? 'K' : 'M'}`)
@@ -192,7 +218,9 @@ export const hashBoard = (board: BoardState): string => {
   ).join('|');
 };
 
-// Helper to count pieces
+/**
+ * Counts men and kings for each side.
+ */
 const countPieces = (board: BoardState): { userMen: number, userKings: number, aiMen: number, aiKings: number } => {
   let userMen = 0, userKings = 0, aiMen = 0, aiKings = 0;
   for (let r = 0; r < BOARD_SIZE; r++) {
@@ -210,6 +238,9 @@ const countPieces = (board: BoardState): { userMen: number, userKings: number, a
   return { userMen, userKings, aiMen, aiKings };
 };
 
+/**
+ * Evaluates win and draw conditions and returns the current game status.
+ */
 export const checkGameStatus = (
   board: BoardState, 
   currentPlayer: Player, // Player whose turn it WOULD BE next
@@ -285,6 +316,9 @@ export const checkGameStatus = (
   return GameStatus.PLAYING;
 };
 
+/**
+ * Converts a board state into a human-readable text representation.
+ */
 export const boardToText = (board: BoardState, perspective: Player): string => {
   let text = "Board (8x8, (0,0) is top-left):\n";
   text += "  0 1 2 3 4 5 6 7 (cols)\n";
@@ -307,6 +341,9 @@ export const boardToText = (board: BoardState, perspective: Player): string => {
   return text;
 };
 
+/**
+ * Converts a move list into a line-oriented human-readable text representation.
+ */
 export const movesToText = (moves: Move[]): string => {
   if (moves.length === 0) return "No available moves.";
   return moves

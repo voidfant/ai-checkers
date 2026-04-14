@@ -1,0 +1,16 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "services/checkersLogic.ts",
+    "services/notationLogic.ts",
+    "types.ts",
+    "constants.ts"
+  ],
+  "out": "docs/typedoc",
+  "readme": "README.md",
+  "tsconfig": "tsconfig.json",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "sort": ["source-order"]
+}
