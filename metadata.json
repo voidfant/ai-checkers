@@ -1,0 +1,6 @@
+{
+  "name": "Checkers vs AI (Gemini)",
+  "description": "Play a game of checkers against an AI opponent powered by Google Gemini. This is a Telegram MiniApp.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}

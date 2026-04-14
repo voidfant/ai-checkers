@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Checkers vs AI</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Initialize Telegram Web App SDK
+    window.Telegram.WebApp.ready();
+    // Expand to full height
+    window.Telegram.WebApp.expand();
+    // Set the header color to match your app's theme
+    window.Telegram.WebApp.setHeaderColor('#171717');
+  </script>
+  <style>
+    :root {
+      --body-bg: linear-gradient(to bottom, #f3f4f6, #ffffff); /* Light theme: soft off-white to white */
+      --body-text: #1f2937; /* gray-800 for Light theme text */
+      --piece-user-bg: #e5e5e5; 
+      --piece-user-border: #cccccc;
+      --piece-user-shadow: rgba(0, 0, 0, 0.2);
+      --piece-ai-bg: #374151;   
+      --piece-ai-border: #1f2937; 
+      --piece-ai-shadow: rgba(0, 0, 0, 0.3);
+      --king-crown-color: #c026d3; 
+      --king-crown-text-shadow: rgba(0,0,0,0.5);
+      --header-bg: #ffffff; /* Header background for light theme */
+      --status-bar-bg: #ffffff; /* Status bar background for light theme */
+      --setup-label-text: #374151; /* neutral-700 for "Play as:", "Difficulty:" labels in light theme */
+      --tg-theme-bg-color: var(--body-bg);
+      --tg-theme-text-color: var(--body-text);
+    }
+
+    html.dark {
+      --body-bg: linear-gradient(to bottom, #262626, #171717); /* Dark theme: coal grey (neutral-800 to neutral-900) */
+      --body-text: #e5e5e5; /* neutral-200 for Dark theme text, good contrast */
+      --piece-user-bg: #f3f4f6; 
+      --piece-user-border: #d1d5db; 
+      --piece-user-shadow: rgba(0, 0, 0, 0.2);
+      --piece-ai-bg: #525252; /* neutral-600, slightly lighter for dark theme AI pieces */
+      --piece-ai-border: #404040; /* neutral-700 */
+      --piece-ai-shadow: rgba(0, 0, 0, 0.4);
+      --king-crown-color: #ec4899; 
+      --king-crown-text-shadow: rgba(0,0,0,0.8);
+      --header-bg: #171717; /* neutral-900 for Dark theme header */
+      --status-bar-bg: #262626; /* neutral-800 for Dark theme status bar */
+      --setup-label-text: #FFFAFA; /* Snow color (very light) for "Play as:", "Difficulty:" labels in dark theme */
+    }
+
+    body { 
+      margin: 0; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; 
+      background: var(--tg-theme-bg-color, var(--body-bg));
+      color: var(--tg-theme-text-color, var(--body-text));
+      transition: background 0.3s ease, color 0.3s ease; /* Background transition might be less noticeable with gradients */
+    }
+    #root { 
+      min-height: 100vh; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: stretch; 
+      justify-content: flex-start; 
+    }
+    
+    .piece-user { 
+      background-color: var(--piece-user-bg);
+      border: 1px solid var(--piece-user-border);
+      box-shadow: 0px 2px 3px var(--piece-user-shadow),
+                  inset 0px 1px 1px rgba(255, 255, 255, 0.6),
+                  inset 0px -1px 1px rgba(0, 0, 0, 0.1);
+    }
+
+    .piece-ai { 
+      background-color: var(--piece-ai-bg);
+      border: 1px solid var(--piece-ai-border);
+      box-shadow: 0px 2px 3px var(--piece-ai-shadow),
+                  inset 0px 1px 1px rgba(255, 255, 255, 0.1),
+                  inset 0px -1px 1px rgba(0, 0, 0, 0.25);
+    }
+
+    .piece-king::after {
+      content: '👑';
+      font-size: 1.1rem; 
+      color: var(--king-crown-color);
+      position: absolute; 
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      line-height: 1; 
+      text-shadow: 0px 1px 2px var(--king-crown-text-shadow);
+      -webkit-user-select: none; 
+      -ms-user-select: none; 
+      user-select: none; 
+    }
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.1.0",
+    "react": "https://esm.sh/react@^19.1.0",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/"
+  }
+}
+</script>
+<script>
+  // API key is injected at build time via Vite (from GEMINI_API_KEY in .env).
+  // For local dev: copy .env.example to .env and add your Gemini API key.
+  // Never commit API keys to version control.
+</script>
+</head>
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

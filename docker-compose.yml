@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Development service for React app
+  dev:
+    build:
+      context: .
+      target: build # Assuming 'build' is a stage in your main Dockerfile
+      args:
+        # Use variable substitution from .env
+        GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      NODE_ENV: development # This is specific to the dev service
+      # These will be picked up from the .env file
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      BOT_TOKEN: ${BOT_TOKEN}
+      API_ID: ${API_ID}
+      API_HASH: ${API_HASH}
+      DOMAIN: ${DOMAIN}
+    command: npm run dev
+    depends_on:
+      - websocket
+
+  # Production service for React app
+  prod:
+    build:
+      context: .
+      # If 'prod' also needs a specific target in Dockerfile, specify it.
+      # args here usually means the final stage of your main Dockerfile
+      args:
+        # Use variable substitution from .env
+        GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "80:80"
+    environment:
+      NODE_ENV: production # This is specific to the prod service
+      # These will be picked up from the .env file
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      BOT_TOKEN: ${BOT_TOKEN}
+      API_ID: ${API_ID}
+      API_HASH: ${API_HASH}
+      DOMAIN: ${DOMAIN}
+    depends_on:
+      - websocket
+
+  # WebSocket server for Telegram Mini App
+  websocket:
+    build:
+      context: .
+      dockerfile: Dockerfile.websocket
+    ports:
+      - "2536:2536" # You had 2536 in the original, I've kept that.
+    volumes:
+      - ./server:/app/server
+      - ./db:/app/db
+    environment:
+      # These will be picked up from the .env file
+      BOT_TOKEN: ${BOT_TOKEN}
+      API_ID: ${API_ID}
+      API_HASH: ${API_HASH}
+      DOMAIN: ${DOMAIN}
