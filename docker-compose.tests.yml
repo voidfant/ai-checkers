@@ -1,0 +1,9 @@
+services:
+  system-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    container_name: ai-checkers-system-tests
+    environment:
+      NODE_ENV: test
+    command: npm run test:system

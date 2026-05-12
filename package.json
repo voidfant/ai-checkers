@@ -12,7 +12,10 @@
     "docs:swagger:validate": "node scripts/validate-openapi.mjs docs/openapi.yaml",
     "docs:typedoc": "typedoc --options typedoc.json",
     "docs:swagger": "npm run docs:swagger:validate",
-    "docs": "npm run docs:typedoc && npm run docs:swagger"
+    "docs": "npm run docs:typedoc && npm run docs:swagger",
+    "test:system:spec": "vitest run --config vitest.system.config.ts",
+    "test:system:report": "node tests/system/run-tests.mjs",
+    "test:system": "npm run test:system:spec && npm run test:system:report"
   },
   "dependencies": {
     "@google/genai": "^1.1.0",
@@ -22,15 +25,19 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^22.14.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.5.0",
     "dotenv": "^16.5.0",
     "js-yaml": "^4.1.0",
+    "jsdom": "^29.1.1",
     "swagger-jsdoc": "^6.2.8",
+    "typedoc": "^0.28.14",
     "typescript": "~5.7.2",
     "vite": "^6.2.0",
-    "typedoc": "^0.28.14"
+    "vitest": "^4.1.6"
   }
 }

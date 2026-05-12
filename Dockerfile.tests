@@ -1,0 +1,14 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY vitest.system.config.ts tsconfig*.json vite.config.ts ./
+COPY constants.ts types.ts ./
+COPY components ./components
+COPY services ./services
+COPY tests/system ./tests/system
+
+CMD ["npm", "run", "test:system"]
